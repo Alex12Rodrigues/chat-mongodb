@@ -13,7 +13,6 @@ const path = require('path');
 const socketIO = require('socket.io');
 const { Socket } = require('dgram');
 
-
 /* 
     Instancias:
         -express
@@ -26,22 +25,17 @@ const server = http.createServer(app);
 const io = socketIO(server);
 
 
-/* 
-    Define a localização da pasta estática:
-    */
+    /* Define a localização da pasta estática: */
 
 app.use(express.static(path.join(__dirname, "public")))
 
 
-/* 
-    Define o EJS como a engine de rendereização frontend:
-    */
+    /* Define o EJS como a engine de rendereização frontend: */
 app.set("views", path.join(__dirname, "public"));
 app.engine("html", ejs.renderFile)
 
-/* 
-    Rota raiz '/' para acessar o index.html da aplicação:
-    */
+
+    /* Rota raiz '/' para acessar o index.html da aplicação: */
 app.use('/', (req, resp) => {
     resp.render("index.html")
 })
@@ -51,18 +45,25 @@ app.use('/', (req, resp) => {
     Início do código do chat 
     */
 
-
-/* 
-    Array que armazena as mensagens
-    */
+    /* Array que armazena as mensagens */
 let messages = [];
 
-
-/*
-    Cria a conexão com socket.io
-    */
+    /*Cria a conexão com socket.io */
 io.on('connection', socket =>{
     console.log("Novo usuário conectado! ID: " +socket.id)
+
+    /* Recuperar e manter as mensagens do front para o back: */
+    socket.emit('previousMessage', messages)
+
+    /* Dispara ações quando recebe as mensagens do front*/
+    socket.on('SendMessage', data => {
+
+        /* Adiciona a nova mensagem no final do array Messages */
+        messages.push(data);
+
+        /* Propaga a mensagem para todos os usuários conectados no chat */
+        socket.broadcast.emit('receivedMessage', data)
+    })
 });
 
 
@@ -70,10 +71,7 @@ io.on('connection', socket =>{
     Fim do código do chat
     */
 
-
-/* 
-    criando servidor https:
-    */
+    /* criando servidor https: */
 
 server.listen(3000, () =>{
     console.log("Servidor do web chat rodando em http://localhost:3000")
